@@ -15,9 +15,7 @@ Bachelor of Science Business Administration – Business Information and Analyti
 
 #### Notable Projects<br>
 <ul>
-  <li>Enterprise Information Management: Created a database for 'Vendiums' (the concept being a fictional company in charge of purchase management for various vendors at local baseball fields) and used a mixture of SQL code and Visual Studio coding to ultimately create a series of forms that allows for browsing and editing of respective information that can better the fictional company's operations, summarized in the video below:</li>
-
-[Vendiums](/test.pdf)  
+  <li>Enterprise Information Management: Created a database for 'Vendiums' (the concept being a fictional company in charge of purchase management for various vendors at local baseball fields) and used a mixture of SQL code and Visual Studio coding to ultimately create a series of forms that allows for browsing and editing of respective information that can better the fictional company's operations.</li>
   <li>Data Warehousing & Business Intelligence: Used the previously mentioned Vendiums database and transformed it using SQL code into a star schema that could then be loaded together piece by piece using Visual Studio and finally analyzed to create dashboards and PowerPivot graphics.</li>
 </ul>
 
