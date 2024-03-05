@@ -69,8 +69,8 @@ Bachelor of Science Business Administration – Business Information and Analyti
    </td>
    <td>
      <ul>
-       Primary Email: yellowcatb@gmail.com<br>
-       School Email: Kieran.Dettmar@du.edu
+       <li>Primary Email: yellowcatb@live.com</li>
+       <li>School Email: Kieran.Dettmar@du.edu</li>
      </ul>
    </td>
  </tr>
