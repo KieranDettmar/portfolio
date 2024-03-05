@@ -26,7 +26,7 @@ Bachelor of Science Business Administration – Business Information and Analyti
 <a name="skills"></a>
 <hr>
 
-## Skills
+## Skills (& Contact Information)
 
 <table>
   <tr>
@@ -56,24 +56,21 @@ Bachelor of Science Business Administration – Business Information and Analyti
     </td>
   </tr>
   <tr>
-    <th>CliftonStrengths (Spring 2024)</th>
     <th>Other Skills</th>
+    <th>Contact Information</th>
  </tr>
  <tr>
    <td>
      <ol>
-        <li>Responsibility</li>
-        <li>Learner</li>
-        <li>Discipline</li>
-        <li>Developer</li>
-        <li>Achiever</li>
+        <li>Active Listening</li>
+        <li>Attention to Detail</li>
+        <li>Organization</li>
      </ol>
    </td>
    <td>
      <ul>
-        <li>Active Listening</li>
-        <li>Attention to Detail</li>
-        <li>Organization</li>
+       Primary Email: yellowcatb@gmail.com<br>
+       School Email: Kieran.Dettmar@du.edu
      </ul>
    </td>
  </tr>
