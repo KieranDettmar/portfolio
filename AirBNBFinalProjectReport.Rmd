@@ -1,0 +1,336 @@
+---
+title: "Airbnb Listings in Seattle Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: scroll
+    source_code: embed
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+#include=FALSE will not include r code in output
+#warning=FALSE will remove any warnings from output
+library(flexdashboard)
+library(tidyverse)
+library(GGally)
+library(caret) #for logistic regression
+library(broom) #for tidy() function
+```
+
+```{r load_data}
+df <- read_csv("Dettmar_INFO3200ProjectData.csv")
+```
+
+Introduction {data-orientation=rows}
+=======================================================================
+
+Row {data-height=250}
+-----------------------------------------------------------------------
+
+### Overview 
+
+For this project, we will follow the DCOVAC process. The process is listed below:
+
+DCOVAC – THE DATA MODELING FRAMEWORK
+
+* DEFINE the Problem
+* COLLECT the Data from Appropriate Sources
+* ORGANIZE the Data Collected
+* VISUALIZE the Data by Developing Charts
+* ANALYZE the data with Appropriate Statistical Methods
+* COMMUNICATE your Results
+
+Row {data-height=650}
+-----------------------------------------------------------------------
+
+### The Problem & Data Collection
+
+#### The Problem
+The data that will be used in our analysis is from a series of over 6,000 Airbnb listings in the Seattle metro area. We will examine the variables in the dataset to determine what helps to predict the price listed for one night of stay.
+
+
+#### The Data
+This dataset has 6021 rows and 10 variables. For this analysis, we will ignore the `room_id` variable, which is simply an identifier that was primarily kept as a leftover from the INFO 3100 version of this dataset.
+
+#### Data Sources
+Levine, S. (2018, December 19). Airbnb Listing Data for Seattle and surrounding regions. Retrieved May 20, 2023.
+https://www.kaggle.com/datasets/shanelev/seattle-airbnb-listings
+
+
+### The Data
+VARIABLES TO PREDICT WITH
+
+* *room_id*: unique room identifier (left from INFO 3100, will not be used) 
+* *room_type*: what type of Airbnb listing is the room? (entire home/apt, private room, shared room)
+* *address*: the city within the Seattle metro area that the listing is located within (Seattle, Bellevue, Kirkland, Redmond, Mercer Island) 
+* *reviews*: the number of reviews that have been made on the listing
+* *overall_satisfaction*: the average satisfaction rating across all reviews on the listing (presumably rounded to the nearest 0.5 star in the dataset)
+* *accommodates*: the number of people that can stay in the listing
+* *bedrooms*: the number of bedrooms provided in the listing
+* *bathrooms*: the number of bathrooms provided in the listing
+
+VARIABLES WE WANT TO PREDICT
+
+* *price*: the current price per night given on the listing in question
+* *price_categorical*: price > 100 coded as 1, cheaper coded as 0
+
+Data
+=======================================================================
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+### Organize the Data
+Organizing data can also include summarizing data values in simple one-way and two-way tables.
+
+```{r, cache=TRUE}
+#the cache=TRUE can be removed. This will allow you to rerun your code without it having to run EVERYTHING from scratch every time. If the output seems to not reflect new updates, you can choose Knit, Clear Knitr cache to fix.
+
+#Clean data by replacing spaces with decimals
+colnames(df) <- make.names(colnames(df))
+#View data
+summary(df,-room_type -address)
+#remove RAD due to it being an index so not a real continuous number
+df <- select(df,-room_id)
+```
+From this data we can see that our variables have a variety of different values based on their types, as well as room type and address which are both text-based categorical variables and don't have summary statistics to show. The room ID variable is a clear outlier because of the ID status of it, so from here on out it will be removed from the dataframe.
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+### Transform Variables
+In this data, price_categorical is a categorical variable that is 1 if the price variable is above 100 and 0 if not. The below code transforms that variable into a factor for future usage and breaks down the distribution.
+```{r, cache=TRUE}
+df <- mutate(df, price_categorical = as.factor(price_categorical))
+```
+#### price_categorical
+
+<!--Instructions to import .jpg or .png images
+use getwd() to see current path structure 
+copy file into same place as .Rmd file
+put the path to this file in the link
+format: ![Alt text](book.jpg) -->
+
+![](PriceCatDist.png)
+
+
+Data Visualization #1
+=======================================================================
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+### Response Variables
+#### CAT.MEDV High(1)/Low(0)
+```{r, cache=TRUE}
+as_tibble(select(df, price_categorical) %>% table()) %>% 
+  ggplot(aes(y = n, x = price_categorical)) + geom_bar(stat="identity")
+```
+
+Through this graph, we can deduce that roughly 1/3 of all listings are above 100 dollars per night, which is a pretty good split for later regression analysis.
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Transform Variables
+
+```{r, cache=TRUE}
+ggpairs(select(df, price_categorical, reviews, overall_satisfaction, accommodates, bedrooms, bathrooms))
+```
+
+
+Data Visualization #2
+=======================================================================
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+### Response Variables
+
+#### price
+```{r, cache=TRUE}
+ggplot(df, aes(price)) + geom_histogram(bins=33)
+```
+
+We see the largest concentration of listings around $50 to $100 per night, although almost equal is $100 to $150. Looking at the potential predictors related to price out of continuous variables, the strongest relationships are with the accommodates and bedrooms variables. The data is also skewed to the right as a result of extremely high prices.
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Transform Variables
+
+```{r, cache=TRUE}
+ggpairs(select(df, price, reviews, overall_satisfaction, accommodates, bedrooms, bathrooms))
+```
+
+
+price Analysis {data-orientation=rows}
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Predict price per night
+For this analysis we will use a Linear Regression Model.
+
+```{r, include=FALSE, cache=TRUE}
+#the include=FALSE hides the output - remove to see
+price_lm <- lm(price ~ . -price_categorical, data = df)
+summary(price_lm)
+```
+
+```{r, include=FALSE, cache=TRUE}
+#the include=FALSE hides the output - remove to see
+tidy(price_lm)
+```
+
+### Adjusted R-Squared
+
+```{r, cache=TRUE}
+ARSq<-round(summary(price_lm)$adj.r.squared,2)
+valueBox(paste(ARSq*100,'%'), icon = "fa-thumbs-up")
+```
+
+### RMSE
+
+```{r, cache=TRUE}
+Sig<-round(summary(price_lm)$sigma,2)
+valueBox(Sig, icon = "fa-thumbs-up")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Regression Output
+
+```{r,include=FALSE, cache=TRUE}
+#knitr::kable(summary(MEDV_lm)$coef, digits = 3) #pretty table output
+summary(price_lm)$coef
+```
+
+```{r, cache=TRUE}
+# this version sorts the p-values (it is using an index to reorder the coefficients)
+idx <- order(coef(summary(price_lm))[,4])  
+out <- coef(summary(price_lm))[idx,] 
+knitr::kable(out, digits = 3) #pretty table output
+```
+
+### Residual Assumptions Explorations
+
+```{r, cache=TRUE}
+plot(price_lm, which=c(1,2)) #which tells which plots to show (1-6 different plots)
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Analysis Summary
+After examining this model, we can determine that there is one variable that is not important for determining price, that being the categorical variable of address for the city within the metro area that the listing is in. From this, we can prune out the variable for a better version of the linear regression.
+
+Row
+-----------------------------------------------------------------------
+
+### Predict price per night, final version
+For this analysis we will use a pruned Linear Regression Model. We removed the address (city of listing) variable from this model.
+
+```{r, include=FALSE, cache=TRUE}
+#the include=FALSE hides the output - remove to see
+price_lm <- lm(price ~ . -price_categorical -address, data = df)
+summary(price_lm)
+```
+
+```{r, include=FALSE, cache=TRUE}
+#the include=FALSE hides the output - remove to see
+tidy(price_lm)
+```
+
+### Adjusted R-Squared
+
+```{r, cache=TRUE}
+ARSq<-round(summary(price_lm)$adj.r.squared,2)
+valueBox(paste(ARSq*100,'%'), icon = "fa-thumbs-up")
+```
+
+### RMSE
+
+```{r, cache=TRUE}
+Sig<-round(summary(price_lm)$sigma,2)
+valueBox(Sig, icon = "fa-thumbs-up")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Regression Output
+
+```{r, include=FALSE, cache=TRUE}
+knitr::kable(summary(price_lm)$coef, digits = 3) #pretty table output
+```
+
+```{r, cache=TRUE}
+# this version sorts the p-values (it is using an index to reorder the coefficients)
+idx <- order(coef(summary(price_lm))[,4])  
+out <- coef(summary(price_lm))[idx,] 
+knitr::kable(out, digits = 3) #pretty table output
+```
+
+### Residual Assumptions Explorations
+
+```{r, cache=TRUE}
+plot(price_lm, which=c(1,2)) #which tells which plots to show (1-6 different plots)
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Analysis Summary
+After examining this model, looking at the residual plots we can see some interesting aspects with our price data. The high values at the right of the Q-Q plot are most likely due to the outliers in the price data and the resulting large skew with a tail to the right side of the data. With the Residuals vs Fitted graph, though, the overall pattern of the data shows that the model is pretty accurate compared to the actual data with only the high Q-Q plot values notably outlying. More models of different types would likely be needed to further validate the level of accuracy with this dataset.
+
+Reducing the predictor that did not help with prediction of the price had little to no impact on our fit statistics (R-square and RMSE (root mean squared error)).
+
+From the following table, we can see the effect on the price by the predictor variables.
+
+```{r, cache=TRUE}
+#create table summary of predictor changes
+predchang = tibble(
+  Variable = c('room_type (both compared options)', 'reviews', 'overall_satisfaction','accommodates','bedrooms','bathrooms'),
+  Direction = c('Decrease', 'Decrease', 'Increase', 'Increase','Increase','Increase')
+)
+knitr::kable(predchang) #pretty table output
+
+```
+
+
+
+
+price_categorical Analysis {data-orientation=rows}
+=======================================================================
+
+Row {data-height=900}
+-----------------------------------------------------------------------
+
+### Predict price per night
+![](PriceCatAnalysis.png)
+
+
+Conclusion
+=======================================================================
+### Summary
+
+In conclusion, the predicting variables only do decently at predicting the price per night for an Airbnb listing, either the through the higher or lower prices (high being above $100 and below being at or lower than $100) or the actual prices. It's likely that either the sample size was too small and the data never developed any clear patterns or that making a prediction of this type is not exactly reliable without overfitting a large amount of additional variables for specific situations.
+
+Combining the results of both types of predictor models and only reporting where agreement was found, we can see that as these variables increase they:
+```{r}
+#final table summary of predictor changes
+predchangfnl = tibble(Decrease_Price = 
+                            c("Number of reviews left on the listing",
+                              "",
+                              "",
+                              ""),
+                    Increase_Price = c("Satisfaction rating of listing",
+                                       "Number of occupants accommodated",
+                                       "Number of bedrooms available",
+                                       "Number of bathrooms available"))  
+knitr::kable(predchangfnl) #pretty table output
+```
