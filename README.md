@@ -15,8 +15,16 @@ Bachelor of Science Business Administration – Business Information and Analyti
 
 #### Notable Projects<br>
 <ul>
+  <li>Sports Analytics: Did my final project for this class analyzing NASCAR (my favorite sport) and diving deep into the discussion of the Chase/playoff system, whether it's still a good marker for awarding the driver with the best season. Involved coding in RStudio with concepts like bar graph creation, linear regressions, and predictions the main focuses. Was complemented in turn after presenting for having a good central story to tell and using the data well to uncover the details of said story piece by piece.
+    
+[Blog Post](/NASCARPlayoffsBlogPost.html)<br>
+[Final Presentation](/placeholder.pptx)
   <li>Enterprise Information Management: Created a database for 'Vendiums' (the concept being a fictional company in charge of purchase management for various vendors at local baseball fields) and used a mixture of SQL code and Visual Studio coding to ultimately create a series of forms that allows for browsing and editing of respective information that can better the fictional company's operations.</li>
   <li>Data Warehousing & Business Intelligence: Used the previously mentioned Vendiums database and transformed it using SQL code into a star schema that could then be loaded together piece by piece using Visual Studio and finally analyzed to create dashboards and PowerPivot graphics.</li>
+  <li>Data Mining & Visualization: Used Tableau to transform a dataset consisting of airBNB listings in the Seattle area to a variety of regressions and visualizations, ultimately turning into a dashboard made with R code to present the results to classmates in groups.</li>
+    
+[Raw R Code](/AirBNBFinalProjectReport.rmd)<br>
+[R Dashboard](/AirBNBFinalProjectReport.html)
 </ul>
 
 <a name="profExp"></a>
