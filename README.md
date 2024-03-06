@@ -23,7 +23,7 @@ Bachelor of Science Business Administration – Business Information and Analyti
   <li>Data Warehousing & Business Intelligence: Used the previously mentioned Vendiums database and transformed it using SQL code into a star schema that could then be loaded together piece by piece using Visual Studio and finally analyzed to create dashboards and PowerPivot graphics.</li>
   <li>Data Mining & Visualization: Used Tableau to transform a dataset consisting of airBNB listings in the Seattle area to a variety of regressions and visualizations, ultimately turning into a dashboard made with R code to present the results to classmates in groups.</li>
     
-[Raw R Code](/AirBNBFinalProjectReport.rmd)<br>
+[Raw R Code](/AirBNBFinalProjectReport.Rmd)<br>
 [R Dashboard](/AirBNBFinalProjectReport.html)
 </ul>
 
