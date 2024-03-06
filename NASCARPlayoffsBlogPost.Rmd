@@ -1,0 +1,167 @@
+---
+title: "NASCAR's 21st Century Evolution and Impact on Stat Relevancy"
+author: "Kieran Dettmar"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Introduction
+
+One of the largest changes that NASCAR has had during the 21st century is moving from a full season points format that was in place since the establishment of the sport to what was initially called "the Chase" (now simply called the playoffs) in 2004. What was once a battle across all 36 races to not only win but stay consistent turned into a points reset for the top 10 drivers in points to battle it out across the final 10 races of the season. While that was the initial format beginning in 2004, it has changed several times since then, but the largest change was the introduction of rounds and eliminations in 2014. The name of the game had changed again, now to winning as many times during the first 26 races and then contending to stay above the points cutline for each round, then making it to the final four and racing for the title as the highest finisher of the four.
+
+Many people have argued that the introduction of these various formats have dulled the sense of the champion truly being the most deserving winner of the season based on their performance, as a driver could now be a runaway favorite during the regular season but catch only one or two bad breaks and be out of contention before the season finale. It has been given criticism for trying to be more similar to other long-standing American sports leagues and encourage "Game 7 moments" through the elimination aspect, which was heavily boosted in 2022 with Ross Chastain's viral video game-esque move dubbed the "Hail Melon" to gain enough points and make the final four, ultimately finishing 2nd in the championship standings.
+  
+Given all of this, my primary focus in this blog is to analyze whether this argument has some statistical proof to back it up using the final standings for every season from 1995 onwards. Is it actually true that the format changes have dulled the series down to who can survive the first 35 and thrive in the finale, or could the modern perception simply be adding rose-colored glasses to cases where consistency was always more accurate than the base stats? Can I use the data to predict what drivers benefited or were impacted negatively by a move away from a full season points format? Those are the types of questions that will be answered below, and through those answers a clarification of whether NASCAR has sacrificed any for the sake of entertainment and viewership will appear.
+  
+# Description of Data Used
+
+The following data was scraped year by year from the website Racing-Reference.info, which has a large benefit of being entirely reliable with information provided because it was bought by NASCAR itself in 2017. I started in 1995 in order to give a solid nine years of standings data prior to the introduction of the Chase, and went all the way to the last completed season in 2022 (as of the time this is being written, the 2023 NASCAR season is just past halfway in the regular season, and could only be introduced into the dataset in November at the earliest).
+
+```{r include=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+NASCARData <- read_csv("NASCARStandingsData.csv")
+NASCARData
+```
+
+There are a wide range of variables within this data, but the primary one that will be focused on predicting is PointsPos, the final finishing position in the points standings for that year. One rule change implemented starting in 2011 meant that drivers competing for points in lower NASCAR series (equivalent to AAA and AA in baseball, for example) could no longer earn points in the top Cup Series being analyzed, so all drivers who fall under that category got a default 90 value on their points position to fill in gaps fairly. The reason for 90 is simply that it's the first multiple of 5 number above the lowest points position earned by a driver who could earn points in any of the seasons included. 
+
+Most following variables are pretty self-explanatory like Races, Wins, T5 (top 5 finishes), T10 (top 10 finishes), and more. AvFn is another important variable we will use for predicting PointsPos, short for average finish across the season. Raf is the number of times a driver is running on track at the finish instead of out of the race, LLF is the number of times a driver finishes the race on the lead lap, and PPts is playoff points earned only for winning stages within a race, winning the race itself, or finishing well in regular season standings.
+
+## Summary Statistics
+
+Next, we can send out some summary statistics of certain key variables to get a sense of range and mean values:
+
+```{r}
+KeyVars <- c("Races", "Win", "T5", "T10", "Pole", "AvFn")
+KeyVarsData <- NASCARData[KeyVars]
+summary(KeyVarsData)
+```
+
+One key aspect shown through the summary statistics here is that less than half of all driver statlines entered into this dataset actually include running a full schedule, as while the full season wasn't always 36 races, it was never lower than 30 in any of the seasons this dataset contains. This is what skews quite a few of the other summary statistics shown in turn, because drivers that don't run the full season are more likely to be those splitting lower-tier team cars than specific entries focused on contending for wins in the starts they do make, thus dragging down the means and medians for variables like wins and top 10 finishes.
+
+## Variable Analysis
+
+One analysis that can be done off the bat on the data is figuring out what drivers show up as a base for being the best in the 21st century given all of the format changes. This is done as a top 20 list of average points finish with filters to only include seasons up to 2020 (preventing drivers in their 2nd or 3rd year currently from showing up), exclude drivers that did not do 31 or more races in the season (less than 36 to include the 1995-2000 seasons), and excluding the rare instances of drivers not running for points but running the full schedule.
+
+```{r}
+NASCARData %>% 
+  filter(Year <= 2020, Races >= 31, PointPos < 90) %>% 
+  group_by(Driver) %>% 
+  summarize(AvgPointPos = mean(PointPos)) %>% 
+  arrange(AvgPointPos) %>% 
+  print(n = 20)
+```
+
+For the most part, this is a pretty expected list for the best drivers of the data's range. Dale Earnhardt and Jimmie Johnson both with seven total championships leads the list alongside Jeff Gordon who won four. Interestingly enough, of the top 8 drivers on the list, three of them have not won a championship: Denny Hamlin (who is still active and could possibly change this goose egg in his career stats before retiring), Carl Edwards (who got as close as losing the championship on a tiebreaker on points in 2011), and Mark Martin (who is widely considered as the best driver to never win a championship). One other particularly interesting driver to be in the top 5 of this result is Chase Elliott, who was a rookie in 2016 but has been consistently good so far in his career and won the championship in 2020.
+
+For my other intro piece of analyzing this data, I wanted to look at the number of wins each champion from 1995-2022 had and see if there were any notable aspects of the resulting bar graph.
+
+```{r}
+NASCARData %>% 
+  filter(PointPos == 1) %>% 
+  ggplot(aes(x = Win)) +
+  geom_bar() +
+  ggtitle("Win Distribution of NASCAR Champions, 1995-2022")
+```
+
+I was genuinely surprised at the results of this graph, specifically how large the count was for champions with 5 race wins during the season. Between 0 and 9 wins, the graph almost looks normally distributed, which is expected as drivers normally have to win at least a few races to be seriously contending for the championship but establishing dominance with a double digit number of wins is something that is hard to do. So who has done it?
+
+```{r}
+NASCARData %>% 
+  filter(PointPos == 1, Win >= 10) %>% 
+  select(Driver, Year, Win) %>% 
+  arrange(desc(Win))
+```
+
+What you'll notice here are that aside from Kyle Larson's dominant 2021 season which was outside the range of the earlier average points position filter, the other three seasons that dominant in wins are held by Jimmie Johnson and Jeff Gordon twice, the two drivers ranked highest in the earlier filter on average points position that won a championship in 1995 or later. This in and of itself is a smaller conclusion: **drivers that are the most consistent threats for a championship overall are also the drivers that appear likely to have a dominant champion season in their career**. The third driver alongside these two earlier is Dale Earnhardt, who won no championships between 1995 and his untimely death in 2001 but had a championship season in the late 1980s where he won 11 races, further supporting this idea. What then might this mean for Kyle Larson, who is still on the younger side and could easily have a decade ahead of him to win more championships? Only time will tell.
+
+# Data Analysis
+
+## Average Finish Regressions
+
+The first part of the analysis here is honed in specifically on average finish and if the strength of the correlation has indeed noticeably weakened with the format changes. To begin, the data needs to be split up to represent each major championship format change so analyses can be ran on each one.
+
+```{r}
+NASCARDataFullSeason <- NASCARData %>% filter(Year < 2004)
+NASCARDataChase <- NASCARData %>% filter(Year >= 2004, Year < 2014)
+NASCARDataElim <- NASCARData %>% filter(Year >= 2014)
+```
+
+From here, we will run a linear regression on all three sections of the data against just average finish so that no other variables are considered and in turn potentially mess up the connection.
+
+```{r}
+summary(lm(PointPos ~ AvFn, data = NASCARDataFullSeason))
+summary(lm(PointPos ~ AvFn, data = NASCARDataChase))
+summary(lm(PointPos ~ AvFn, data = NASCARDataElim))
+```
+
+As primarily expected, practically every indicator shows firmly that the connection between average finish and points position is decreasing as the format of the championship has become more convoluted. The biggest indicator of this is the R-squared value, which goes from 0.63 with full season points to 0.53 with the pre-elimination playoff formats to a much lower 0.41 with the elimination format. In addition, the coefficient itself goes up with each section progressing through time, which before including the intercept is indicative of a lower correlated points position if the same average finish is inputted into each regression (for example with intercepts, a 10.0 average finish would result in 5.74 points position for full season but 10.26 for elimination format).
+
+## Ideal Regression of Full Season Stats
+
+In order to advance to the second part of the data analysis, it is first helpful to enter in variables other than average finish and determine what the best grouping of variables is for predicting the points position under the full season years.
+
+```{r}
+FullSeasonIdealReg <- lm(PointPos ~ T10 + AvFn + Races, data = NASCARDataFullSeason)
+summary(FullSeasonIdealReg)
+```
+
+After lots of pruning to remove both variables that had high p-values and one or two variables that were significant but had a direction of the coefficient that made no sense logically (more lead lap finishes resulting in a worse points position?), the variables that were remaining were number of top 10 finishes, average finish, and number of races. Considering that every driver realistically being a contender would be full time, this means that the primary variables considered key to winning a championship prior to the playoffs are not wins, but rather **consistency through top 10 finishes and good finishes overall to keep the average finish value low**. This was fully proven by the final year before it was implemented, as Matt Kenseth won the 2003 championship with only 1 race win all year (the singular 1 win entry on the bar chart further up showing win distribution across champions).
+
+## Predictions of Full Season into Playoff Years
+
+Now that this ideal regression has been created using the seasons from 1995 to 2003, it's time to use said regression and predict from 2004 onward. The code below creates a new dataset with only those years, creates the predicted points position (as a decimal, of course) using the ideal regression, and also adds a column for the inverse of the predicted value for top_n() sorting analysis reasons.
+
+```{r}
+NASCARDataPlayoffs <- NASCARData %>% filter(Year >= 2004)
+NASCARDataPlayoffs$PointPosPred <- predict(FullSeasonIdealReg, newdata = NASCARDataPlayoffs)
+NASCARDataPlayoffs$PointPosPredInverse <- 90 - NASCARDataPlayoffs$PointPosPred
+```
+
+First, I want to look at what this new prediction would actually produce as the champion of each season and determine what significant changes occur.
+
+```{r}
+NASCARDataPlayoffsChamps <- NASCARDataPlayoffs %>% 
+  select(Driver, Year, PointPosPredInverse, PointPos, Win, T5, T10, AvFn) %>% 
+  group_by(Year) %>% 
+  top_n(1, PointPosPredInverse) %>% 
+  arrange(Year, desc(PointPosPredInverse))
+NASCARDataPlayoffsChamps
+```
+
+As we can quickly see, a lot changes in these predictions. Jeff Gordon's four additional championships allow him to break the tie with Dale Earnhardt and Richard Petty for most NASCAR Cup Series championships with a grand total of eight, while Jimmie Johnson only gets three championships in his career. Also massively benefitting is Kevin Harvick who jumps from one championship in actuality to a staggering five here, Carl Edwards who not only gets the championship he lost on a tiebreaker in 2011 but also wins 2008, and Ross Chastain who would be the defending champion at the present moment (although to the ire of many fans considering his many recent rivalries with other drivers). Two aspects that are impressive to note are the rarity of the champion being outside of the top 3 in standings with the actual results and the high number of seasons where drivers with lots of wins ended up being the champion anyways, despite wins themselves not being a variable in the regression. In fact, we can graph the win distribution below to show this visually:
+
+```{r}
+NASCARDataPlayoffsChamps %>% 
+  ggplot(aes(x = Win)) +
+  geom_bar() +
+  ggtitle("Win Distribution of NASCAR Champions Using Regression Model, 2004-2022")
+```
+
+Finally, the end goal of this prediction segment is to see which drivers were affected the most in either direction by the regression model as a predictor. To do this most accurately, a new variable is created ranking the predicted points positions within each year. The only filter applied here is that only full time seasons are included, as due to this prediction disregarding drivers not running for points from 2011 onward, we no longer have to worry about excluding those seasons. For each driver, the summary variables show their average actual points position, their average predicted and then ranked points position, and the difference between them.
+
+```{r}
+NASCARDataPlayoffs <- NASCARDataPlayoffs %>% 
+                        group_by(Year) %>% 
+                        mutate(PointPosPredRank = rank(PointPosPred))
+
+NASCARDataPlayoffs %>% 
+  filter(Races >= 36) %>% 
+  group_by(Driver) %>% 
+  summarize(AvgPointPos = mean(PointPos), 
+            AvgPointPosPredRank = mean(PointPosPredRank), 
+            DiffPPP = AvgPointPos - AvgPointPosPredRank) %>% 
+  arrange(AvgPointPosPredRank) %>% 
+  print(n = 20)
+```
+
+Looking at the top 20 in the new ranked and averaged variable, the differences change a relatively sizable amount for quite a few drivers in both directions. The top 3 of Harvick, Johnson, and Gordon make sense as the drivers with the most championships earned during this time span, especially Harvick with a difference of above 1 with four more championships than in actuality. Other notable changes include a massive increase for Kyle Busch despite having one less championship, an increase for Ross Chastain likely due to winning in 2022 under the predictions paired with only one or two prior years included under the filter, and decreases for drivers like Chase Elliott who dropped his 2020 championship and Mark Martin at the end of his career.
+
+# Conclusion
+
+So, what all was learned from this experimental glimpse into an alternative timeline? For starters, we proved pretty definitively that a stat like average finish which once was a pretty common metric for measuring how well a driver was going to finish in the points standings that year has been muddied some with constant format additions and changes that have turned the series from a marathon into a carefully-calculated series of sprints where the goal is survival until the end opportunity to pounce towards a championship. From the ideal linear regression model that was ran, we then determined that consistency was truly the main name of the game prior to the implementation of the playoffs, with stats like average finish and top 10 finishes being the reliable path towards contending more than actually winning races. Using this regression, we then used it to predict an alternate time where the list of champions was altered and new drivers rose to elite prominence, yet the stat lines of these champions did not look notable enough for someone to judge it as objectively worse than the actual list of champions.
+
+So was NASCAR's decision to implement the playoffs for the purpose of providing more entertainment and creating more dramatic moments to keep viewers hooked for the next week ultimately worth it? With declining viewership and decreasing attendance at certain tracks, it's certainly possible, but I alone cannot judge that for sure through means like this. What is certain is that simply arguing to change back to the old path is improbable to work, as NASCAR has been about 20 years removed from it by now and whether they're building upwards or digging their own grave deeper, they're stuck with it until the very end now.
